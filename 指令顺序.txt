@@ -1,0 +1,44 @@
+
+问题1：生成 Prisma Schema
+请根据 AI_MANGA_DRAMA_PLATFORM_PLAN.md 文档的第7章数据模型，为我生成完整的 Prisma schema 文件。包括以下模型：Project, Script, CharacterBible, PropBible, WorldBible, StoryboardShot, ConsistencyPrompt, GeneratedAsset, RenderTask, ExportJob。需要包含所有字段、类型、关系、索引和枚举。把生成的代码放在 prisma/schema.prisma 文件中。
+
+问题2：生成 TypeScript 类型定义
+请基于上面的 Prisma schema，生成完整的 TypeScript 类型定义文件。包括所有模型的输入类型、API 响应类型等。把代码放在 types/index.ts。
+
+问题3：生成 DeepSeek 服务模块
+请为我生成 DeepSeek API 的集成模块。需要包含：
+DeepSeek 客户端初始化
+剧本解析函数
+角色设定卡生成函数
+一致性提示词拼接函数
+完整的错误处理
+使用 Zod 进行数据验证
+把代码放在 lib/deepseek.ts。
+
+问题4：生成项目基础页面
+请为我生成以下页面文件：
+app/page.tsx - 项目列表页
+app/projects/create/page.tsx - 创建项目页
+app/projects/[id]/page.tsx - 项目详情页
+app/layout.tsx - 布局文件（包含导航栏）
+使用 Tailwind CSS 进行样式设计，确保页面美观。
+
+问题5：生成项目 API 路由
+请为我生成项目相关的 API 路由：
+app/api/projects/route.ts - POST 创建项目，GET 获取项目列表
+app/api/projects/[id]/route.ts - GET 获取详情，PATCH 更新，DELETE 删除
+app/api/analyze-script/route.ts - 调用 DeepSeek 分析剧本
+包含完整的请求验证、错误处理和类型定义。
+
+powershell
+# 安装 Prisma
+npm install prisma @prisma/client
+
+# 初始化 Prisma（如果你还没做）
+npx prisma init
+
+# 运行迁移
+npx prisma migrate dev --name init
+
+# 启动开发服务器
+npm run dev

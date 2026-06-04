@@ -1,0 +1,512 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum ProjectStatus {
+  DRAFT
+  SCRIPT_ANALYZING
+  SCRIPT_ANALYZED
+  BIBLE_GENERATING
+  BIBLE_GENERATED
+  STORYBOARD_GENERATING
+  STORYBOARD_GENERATED
+  ASSET_GENERATING
+  ASSET_GENERATED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ScriptType {
+  FULL_SCRIPT
+  SYNOPSIS
+  SCENE_SCRIPT
+}
+
+enum AnalysisStatus {
+  PENDING
+  ANALYZING
+  COMPLETED
+  FAILED
+}
+
+enum AssetType {
+  CHARACTER_PORTRAIT
+  PROP_IMAGE
+  WORLD_BACKGROUND
+  STORYBOARD_SHOT
+  REFERENCE_IMAGE
+  EXPORT_FRAME
+  AUDIO
+  VIDEO
+  OTHER
+}
+
+enum AssetStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  REJECTED
+}
+
+enum RenderStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum TaskType {
+  SCRIPT_ANALYSIS
+  REFERENCE_IMAGE
+  SHOT_IMAGE
+  VOICE
+  VIDEO_RENDER
+  EXPORT
+  CONSISTENCY_CHECK
+  STORYBOARD_GENERATE
+}
+
+enum ExportFormat {
+  MP4
+  GIF
+  WEBM
+  PNG_SEQUENCE
+  PDF
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StoryboardShotStatus {
+  DRAFT
+  PROMPT_READY
+  GENERATING
+  COMPLETED
+  REVISION_NEEDED
+}
+
+enum ConsistencyPromptType {
+  CHARACTER
+  SCENE
+  STYLE
+  LIGHTING
+  COMPOSITION
+  COLOR_PALETTE
+  CUSTOM
+}
+
+enum DialogueEmotion {
+  NEUTRAL
+  HAPPY
+  SAD
+  ANGRY
+  SURPRISED
+  FEARFUL
+  DISGUSTED
+  EXCITED
+  WORRIED
+  CONFUSED
+}
+
+model Project {
+  id              String        @id @default(uuid())
+  name            String
+  description     String?
+  genre           String?
+  aspectRatio     String?       @default("9:16")
+  visualStyle     String?       @default("国漫")
+  targetDuration  Int?          @default(180)
+  status          ProjectStatus @default(DRAFT)
+  bibleLocked     Boolean       @default(false)
+  coverUrl        String?
+  metadata        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scripts            Script[]
+  characterBibles    CharacterBible[]
+  propBibles         PropBible[]
+  worldBibles        WorldBible[]
+  storyboardShots    StoryboardShot[]
+  consistencyPrompts ConsistencyPrompt[]
+  generatedAssets    GeneratedAsset[]
+  renderTasks        RenderTask[]
+  exportJobs         ExportJob[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model Script {
+  id              String         @id @default(uuid())
+  projectId       String
+  title           String
+  content         String
+  normalizedText  String?
+  scriptType      ScriptType     @default(FULL_SCRIPT)
+  analysisStatus  AnalysisStatus @default(PENDING)
+  parsedData      Json?
+  version         Int            @default(1)
+  notes           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  characterBibles CharacterBible[]
+  propBibles      PropBible[]
+  worldBibles     WorldBible[]
+  storyboardShots StoryboardShot[]
+
+  @@index([projectId])
+  @@index([analysisStatus])
+  @@index([updatedAt])
+}
+
+model CharacterBible {
+  id                 String  @id @default(uuid())
+  projectId          String
+  scriptId           String?
+  characterId        String
+  name               String
+  displayName        String?
+  alias              String?
+  roleType           String?
+  description        String?
+  appearance         String?
+  hair               String?
+  costume            String?
+  personality        String?
+  background         String?
+  relationships      Json?
+  age                Int?
+  gender             String?
+  voiceProfile       String?
+  imagePrompt        String?
+  negativePrompt     String?
+  referenceImageUrls Json?
+  referenceAssetId   String?
+  customFields       Json?
+  isLocked           Boolean @default(false)
+  aiCompletedFields  Json?
+  version            Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script          Script?          @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  generatedAssets GeneratedAsset[]
+
+  @@unique([projectId, characterId])
+  @@index([projectId])
+  @@index([scriptId])
+  @@index([name])
+  @@index([roleType])
+}
+
+model PropBible {
+  id                 String  @id @default(uuid())
+  projectId          String
+  scriptId           String?
+  propId             String
+  name               String
+  description        String?
+  appearance         String?
+  significance       String?
+  category           String?
+  propType           String?
+  purpose            String?
+  ownerCharacterId   String?
+  sceneId            String?
+  material           String?
+  color              String?
+  shape              String?
+  size               String?
+  imagePrompt        String?
+  negativePrompt     String?
+  referenceImageUrls Json?
+  referenceAssetId   String?
+  customFields       Json?
+  isLocked           Boolean @default(false)
+  aiCompletedFields  Json?
+  version            Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script          Script?          @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  generatedAssets GeneratedAsset[]
+
+  @@unique([projectId, propId])
+  @@index([projectId])
+  @@index([scriptId])
+  @@index([name])
+  @@index([category])
+}
+
+model WorldBible {
+  id                 String  @id @default(uuid())
+  projectId          String
+  scriptId           String?
+  sceneId            String
+  name               String
+  description        String?
+  sceneType          String?
+  setting            String?
+  layout             String?
+  atmosphere         String?
+  timePeriod         String?
+  location           String?
+  colorPalette       String?
+  lighting           String?
+  weather            String?
+  mood               String?
+  keyObjects         String?
+  architecture       String?
+  floraAndFauna      String?
+  cultureAndSociety  String?
+  imagePrompt        String?
+  negativePrompt     String?
+  referenceImageUrls Json?
+  referenceAssetId   String?
+  customFields       Json?
+  isLocked           Boolean @default(false)
+  aiCompletedFields  Json?
+  version            Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script          Script?          @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  generatedAssets GeneratedAsset[]
+  storyboardShots StoryboardShot[]
+
+  @@unique([projectId, sceneId])
+  @@index([projectId])
+  @@index([scriptId])
+  @@index([name])
+}
+
+model StoryboardShot {
+  id                  String               @id @default(uuid())
+  projectId           String
+  scriptId            String?
+  episodeId           String?              @default("ep1")
+  shotNumber          Int
+  sceneNumber         Int
+  worldBibleId        String?
+  characterIds        Json?
+  propIds             Json?
+  panelNumber         Int?
+  description         String?
+  action              String?
+  emotion             String?
+  dialogue            String?
+  subtitle            String?
+  voiceText           String?
+  dialogueEmotion     DialogueEmotion?     @default(NEUTRAL)
+  camera              String?
+  cameraAngle         String?
+  lighting            String?
+  moodPrompt          String?
+  imagePrompt         String?
+  negativePrompt      String?
+  compositionNotes    String?
+  duration            Float?
+  imageAssetId        String?
+  audioAssetId        String?
+  videoAssetId        String?
+  status              StoryboardShotStatus @default(DRAFT)
+  consistencyPromptId String?
+  referenceImageUrls  Json?
+  customFields        Json?
+  version             Int                  @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script            Script?            @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  worldBible        WorldBible?        @relation(fields: [worldBibleId], references: [id], onDelete: SetNull)
+  consistencyPrompt ConsistencyPrompt? @relation(fields: [consistencyPromptId], references: [id], onDelete: SetNull)
+  generatedAssets   GeneratedAsset[]
+
+  @@unique([projectId, shotNumber])
+  @@index([projectId])
+  @@index([scriptId])
+  @@index([sceneNumber])
+  @@index([worldBibleId])
+  @@index([status])
+  @@index([consistencyPromptId])
+}
+
+model ConsistencyPrompt {
+  id          String                @id @default(uuid())
+  projectId   String
+  name        String
+  targetType  String?
+  targetId    String?
+  promptType  ConsistencyPromptType @default(CUSTOM)
+  description String?
+  content     String
+  variables   Json?
+  tags        Json?
+  version     Int                   @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  storyboardShots StoryboardShot[]
+
+  @@index([projectId])
+  @@index([promptType])
+  @@index([targetType, targetId])
+  @@index([name])
+}
+
+model GeneratedAsset {
+  id               String      @id @default(uuid())
+  projectId        String
+  assetType        AssetType
+  storageUrl       String?
+  prompt           String?
+  negativePrompt   String?
+  model            String?
+  modelVersion     String?
+  seed             Int?
+  parameters       Json?
+  imageUrl         String?
+  thumbnailUrl     String?
+  localPath        String?
+  width            Int?
+  height           Int?
+  fileSize         Int?
+  format           String?
+  status           AssetStatus @default(PENDING)
+  errorMessage     String?
+  generationTimeMs Int?
+  sourceTaskId     String?
+  batchId          String?
+  sortOrder        Int         @default(0)
+  metadata         Json?
+
+  characterBibleId String?
+  propBibleId      String?
+  worldBibleId     String?
+  storyboardShotId String?
+
+  createdAt DateTime @default(now())
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  characterBible  CharacterBible?  @relation(fields: [characterBibleId], references: [id], onDelete: SetNull)
+  propBible       PropBible?       @relation(fields: [propBibleId], references: [id], onDelete: SetNull)
+  worldBible      WorldBible?      @relation(fields: [worldBibleId], references: [id], onDelete: SetNull)
+  storyboardShot  StoryboardShot?  @relation(fields: [storyboardShotId], references: [id], onDelete: SetNull)
+  renderTasks     RenderTask[]
+  exportJobs      ExportJob[]
+
+  @@index([projectId])
+  @@index([assetType])
+  @@index([status])
+  @@index([sourceTaskId])
+  @@index([characterBibleId])
+  @@index([propBibleId])
+  @@index([worldBibleId])
+  @@index([storyboardShotId])
+  @@index([batchId])
+  @@index([createdAt])
+}
+
+model RenderTask {
+  id               String       @id @default(uuid())
+  projectId        String
+  taskType         TaskType     @default(SHOT_IMAGE)
+  generatedAssetId String?
+  status           RenderStatus @default(QUEUED)
+  priority         Int          @default(0)
+  progress         Float        @default(0)
+  inputPayload     Json?
+  outputPayload    Json?
+  settings         Json?
+  outputFormat     String?
+  outputPath       String?
+  errorMessage     String?
+  retryCount       Int          @default(0)
+  maxRetries       Int          @default(3)
+  estimatedTimeMs  Int?
+  actualTimeMs       Int?
+
+  queuedAt    DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  generatedAsset GeneratedAsset? @relation(fields: [generatedAssetId], references: [id], onDelete: SetNull)
+  exportJobs     ExportJob[]
+
+  @@index([projectId])
+  @@index([taskType])
+  @@index([generatedAssetId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model ExportJob {
+  id             String       @id @default(uuid())
+  projectId      String
+  renderTaskId   String?
+  outputAssetId  String?
+  name           String?
+  format         ExportFormat @default(MP4)
+  status         ExportStatus @default(PENDING)
+  progress       Float        @default(0)
+  settings       Json?
+  fileUrl        String?
+  filePath       String?
+  fileSize       Int?
+  duration       Float?
+  frameCount     Int?
+  resolution     String?
+  fps            Int?         @default(24)
+  errorMessage   String?
+  retryCount     Int          @default(0)
+  maxRetries     Int          @default(3)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  renderTask   RenderTask?     @relation(fields: [renderTaskId], references: [id], onDelete: SetNull)
+  outputAsset  GeneratedAsset? @relation(fields: [outputAssetId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([renderTaskId])
+  @@index([outputAssetId])
+  @@index([format])
+  @@index([status])
+  @@index([createdAt])
+}
